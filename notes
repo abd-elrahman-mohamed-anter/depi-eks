@@ -1,0 +1,32 @@
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install prometheus prometheus-community/prometheus \
+  --namespace monitoring
+helm install grafana grafana/grafana \
+  --namespace monitoring
+
+
+4. لو عايز تتجنب PVCs (حل سريع)
+ممكن تنزل Prometheus من Helm من غير PersistentVolume:
+
+bash
+helm upgrade prometheus prometheus-community/prometheus \
+  --namespace monitoring \
+  --set alertmanager.persistentVolume.enabled=false \
+  --set server.persistentVolume.enabled=false
+ده هيخليهم يشتغلوا بالـ emptyDir (يعني البيانات مش هتفضل محفوظة لو الـ Pod اتعمله restart).
+
+
+1. لو عايز حل سريع (بدون تخزين دائم)
+إنت بالفعل عطّلت الـ PVC للـ Prometheus Server، لكن لسه Alertmanager محتاج نفس التعديل. شغّل:
+
+bash
+helm upgrade prometheus prometheus-community/prometheus \
+  --namespace monitoring \
+  --set alertmanager.persistentVolume.enabled=false
+ده هيخلي Alertmanager يستخدم emptyDir بدل PVC → يشتغل فورًا، لكن البيانات (alerts history) هتضيع مع أي restart.
+
+helm upgrade prometheus prometheus-community/prometheus \
+  --namespace monitoring \
+  --set server.extraScrapeConfigsSecret=prometheus-additional-scrape-configs
